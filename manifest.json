@@ -1,0 +1,19 @@
+{
+  "name": "BusTalk Info Pasajeros (TMSA)",
+  "short_name": "BusTalk TMSA",
+  "description": "Información de llegada de autobuses en tiempo real para Menorca - TMSA",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#121212",
+  "theme_color": "#121212",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
