@@ -32,7 +32,7 @@
         .animate-dash { animation: dash-flow 1s linear infinite; }
     </style>
 </head>
-<body x-data="busTalkPasajeroApp()" x-init="init()" class="font-sans h-screen flex flex-col overflow-hidden bg-zinc-950 text-white">
+<body x-data="busTalkPasajeroApp()" x-init="init()" class="font-sans h-screen flex flex-col overflow-hidden bg-zinc-950 text-white relative">
 
     <!-- MOTOR PWA -->
     <script>
@@ -43,6 +43,40 @@
             });
         }
     </script>
+
+    <!-- MODAL DE BIENVENIDA / TUTORIAL EN PRIMERA APERTURA -->
+    <div x-show="mostrarModalTutorial" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div class="bg-zinc-900 border-2 border-amber-500 rounded-3xl p-6 max-w-md w-full space-y-5 shadow-2xl relative">
+            <div class="flex items-center space-x-3 border-b border-zinc-800 pb-3">
+                <div class="bg-amber-500 text-black p-2.5 rounded-2xl font-black text-xl">
+                    <i class="fas fa-bus"></i>
+                </div>
+                <div>
+                    <h2 class="text-lg font-black text-white">¡Bienvenido a BusTalk!</h2>
+                    <p class="text-xs text-amber-400 font-bold">TMSA Menorca v2.4.0</p>
+                </div>
+            </div>
+
+            <div class="space-y-3 text-xs text-zinc-300 leading-relaxed">
+                <div class="flex items-start space-x-2.5">
+                    <i class="fas fa-route text-amber-400 mt-1"></i>
+                    <p><strong>Selecciona tu Línea:</strong> Elige la línea exacta que vas a coger (L01A, L01B, L51, L52, L53, L71, L72...).</p>
+                </div>
+                <div class="flex items-start space-x-2.5">
+                    <i class="fas fa-map-marker-alt text-amber-400 mt-1"></i>
+                    <p><strong>Tu Marquesina:</strong> Elige la parada donde estás esperando para ver los minutos exactos de llegada.</p>
+                </div>
+                <div class="flex items-start space-x-2.5">
+                    <i class="fas fa-clock text-emerald-400 mt-1"></i>
+                    <p><strong>Contador en Vivo:</strong> Observa el minutero en tiempo real descontando según se acerca el autobús.</p>
+                </div>
+            </div>
+
+            <button @click="cerrarTutorial()" class="w-full py-3.5 bg-emerald-500 hover:bg-emerald-600 text-black font-black text-sm rounded-xl shadow-lg transition-all flex items-center justify-center gap-2">
+                <i class="fas fa-check-circle"></i> ¡Entendido!
+            </button>
+        </div>
+    </div>
 
     <!-- CABECERA -->
     <header class="p-4 bg-zinc-900 border-b border-zinc-800 flex justify-between items-center flex-shrink-0 shadow-md">
@@ -57,6 +91,12 @@
         </div>
 
         <div class="flex items-center gap-2">
+            <!-- BOTÓN DE INSTRUCCIONES (?) -->
+            <button @click="mostrarModalTutorial = true" class="w-8 h-8 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center text-amber-400 font-black text-sm hover:bg-zinc-700 transition" title="Instrucciones">
+                ?
+            </button>
+
+            <!-- SELLO MEDBASHA EN CABECERA -->
             <div class="flex items-center gap-1.5 border border-zinc-800 px-2.5 py-1 rounded-lg bg-zinc-950">
                 <svg width="14" height="14" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <polygon points="50,5 90,27.5 90,72.5 50,95 10,72.5 10,27.5" stroke="#facc15" stroke-width="8" fill="#121212" />
@@ -67,20 +107,20 @@
         </div>
     </header>
 
-    <!-- CONTENIDO -->
+    <!-- CONTENIDO PRINCIPAL -->
     <main class="flex-1 overflow-y-auto p-4 space-y-4 hide-scrollbar">
         
-        <!-- SELECTORES DE RED Y PARADA DEL USUARIO -->
+        <!-- SELECTORES DE LÍNEA Y PARADA -->
         <div class="bg-zinc-900 p-4 rounded-2xl border border-zinc-800 space-y-3 shadow-lg">
             
-            <!-- SELECTOR DE RED / ZONA DE TMSA -->
+            <!-- SELECTOR DE LÍNEA OFICIAL -->
             <div>
                 <label class="text-xs font-black uppercase text-amber-500 tracking-wider block mb-1.5">
-                    <i class="fas fa-layer-group mr-1.5"></i> Red / Zona de Transporte
+                    <i class="fas fa-route mr-1.5"></i> Línea de Autobús
                 </label>
-                <select x-model="redSeleccionadaKey" @change="cambiarRed()" class="w-full p-3 bg-zinc-950 border border-zinc-700 rounded-xl font-bold text-white text-base outline-none focus:border-amber-500 shadow-inner">
-                    <template x-for="(redObj, key) in REDES_AUTOBUSES" :key="key">
-                        <option :value="key" x-text="redObj.nombre"></option>
+                <select x-model="lineaSeleccionadaKey" @change="cambiarLinea()" class="w-full p-3 bg-zinc-950 border border-zinc-700 rounded-xl font-bold text-white text-base outline-none focus:border-amber-500 shadow-inner">
+                    <template x-for="(lineaObj, key) in LINEAS_TMSA" :key="key">
+                        <option :value="key" x-text="lineaObj.nombre"></option>
                     </template>
                 </select>
             </div>
@@ -91,7 +131,7 @@
                     <i class="fas fa-map-marker-alt text-amber-500 mr-1.5"></i> Tu Marquesina de Espera
                 </label>
                 <select x-model="paradaSeleccionada" @change="guardarParada()" class="w-full p-3.5 bg-zinc-950 border border-zinc-700 rounded-xl font-black text-white text-lg outline-none focus:border-amber-500 shadow-inner">
-                    <template x-for="p in listaParadasRedActual" :key="p">
+                    <template x-for="p in listaParadasLineaActual" :key="p">
                         <option :value="p" x-text="p"></option>
                     </template>
                 </select>
@@ -116,10 +156,9 @@
             <template x-for="bus in busesFiltradosVisibles" :key="bus.id">
                 <div class="p-4 bg-zinc-900 border border-zinc-800 rounded-2xl shadow-md space-y-4">
                     
-                    <!-- CABECERA DE TARJETA CON COLORES PREDOMINANTES POR SENTIDO Y LÍNEA -->
+                    <!-- CABECERA DE TARJETA -->
                     <div class="flex justify-between items-start">
                         <div class="flex items-center gap-3">
-                            <!-- Insignia del Bus con Color Dinámico de Dirección -->
                             <span class="font-black px-3 py-1.5 rounded-xl text-xl shadow-lg"
                                   :class="obtenerClaseColorInsignia(bus)"
                                   x-text="bus.id"></span>
@@ -136,7 +175,7 @@
                             </div>
                         </div>
                         
-                        <!-- ESTADO PAX (SIEMPRE EN VERDE) -->
+                        <!-- ESTADO PAX -->
                         <div class="text-right bg-zinc-950 px-3.5 py-1.5 rounded-xl border border-zinc-800">
                             <p class="text-[9px] uppercase tracking-widest text-zinc-500 font-black">Plazas</p>
                             <span class="text-base font-black text-emerald-400" x-text="(bus.pax || 0) + ' pax'"></span>
@@ -148,7 +187,7 @@
                         <div class="flex justify-between items-center text-xs font-bold text-zinc-400 uppercase tracking-wider">
                             <span>Progreso del Trayecto</span>
                             
-                            <!-- TIEMPO ESTIMADO CON TIPOGRAFÍA AMPLIADA Y ALERTA DE TRÁFICO LENTO -->
+                            <!-- TIEMPO ESTIMADO TOTAL -->
                             <div class="flex items-center gap-2">
                                 <template x-if="obtenerMinutosRetraso(bus) >= 6 && esBusEnCamino(bus)">
                                     <div class="flex items-center gap-1.5 px-2 py-0.5 bg-red-950/80 border border-red-600 rounded-md animate-pulse">
@@ -161,7 +200,6 @@
                                     </div>
                                 </template>
 
-                                <!-- CONTADOR AMPLIADO -->
                                 <span class="font-black text-xl sm:text-2xl tracking-tight" 
                                       :class="{
                                           'text-emerald-400 font-extrabold': bus.ubicacion === paradaSeleccionada && bus.enParada,
@@ -173,12 +211,10 @@
                             </div>
                         </div>
 
-                        <!-- NODOS Y TRAMOS DINÁMICOS CON TIPOGRAFÍAS AMPLIADAS -->
+                        <!-- NODOS Y TRAMOS DINÁMICOS -->
                         <div class="relative flex items-center justify-between px-2 py-3 overflow-x-auto hide-scrollbar">
                             <template x-for="(paradaNombre, idx) in obtenerArrayRutaBus(bus)" :key="paradaNombre">
                                 <div class="flex items-center">
-                                    
-                                    <!-- NODO DE LA MARQUESINA -->
                                     <div class="relative z-10 flex flex-col items-center">
                                         <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all"
                                              :class="{
@@ -192,7 +228,6 @@
                                             </template>
                                         </div>
                                         
-                                        <!-- NOMBRES DE PUEBLOS AMPLIADOS -->
                                         <span class="text-xs font-black uppercase mt-2 text-center whitespace-nowrap tracking-wide"
                                               :class="{
                                                   'text-emerald-400 font-black scale-105': bus.ubicacion === paradaNombre && bus.enParada,
@@ -201,7 +236,6 @@
                                               x-text="paradaNombre"></span>
                                     </div>
 
-                                    <!-- LÍNEA DISCONTINUA CONECTOR -->
                                     <template x-if="idx < obtenerArrayRutaBus(bus).length - 1">
                                         <div class="w-12 sm:w-16 h-1.5 mx-1.5 relative flex items-center">
                                             <template x-if="esTramoActivo(bus, paradaNombre, obtenerArrayRutaBus(bus)[idx+1])">
@@ -225,14 +259,21 @@
                         </div>
                     </div>
 
-                    <!-- ESTADO TEXTUAL -->
+                    <!-- ESTADO TEXTUAL INFERIOR (EN VIVO CON RELOJ DEL MÓVIL) -->
                     <div class="flex justify-between items-center text-xs px-1 text-zinc-300">
                         <p class="font-bold flex items-center gap-1.5">
                             <template x-if="bus.enParada">
                                 <span><i class="fas fa-parking text-emerald-400 text-sm"></i> Detenido en: <strong class="text-white text-sm" x-text="bus.ubicacion"></strong></span>
                             </template>
                             <template x-if="!bus.enParada">
-                                <span><i class="fas fa-route text-sm" :class="obtenerClaseColorTexto(bus)"></i> En marcha hacia el siguiente destino</span>
+                                <span>
+                                    <i class="fas fa-route text-sm mr-1" :class="obtenerClaseColorTexto(bus)"></i> 
+                                    En marcha hacia <strong class="text-white font-black" x-text="obtenerSiguienteParadaNombre(bus)"></strong> 
+                                    <span class="ml-1 px-2 py-0.5 rounded font-black" 
+                                          :class="obtenerMinutosRetraso(bus) >= 3 ? 'bg-red-900/60 text-red-400' : 'bg-emerald-950 text-emerald-400 border border-emerald-800'">
+                                        <i class="far fa-clock mr-1"></i><span x-text="obtenerTextoTramoEnVivo(bus)"></span>
+                                    </span>
+                                </span>
                             </template>
                         </p>
                     </div>
@@ -240,6 +281,18 @@
             </template>
         </div>
     </main>
+
+    <!-- PIE DE PÁGINA DISIMULADO SELLADO MEDBASHA -->
+    <footer class="p-2.5 bg-zinc-950 border-t border-zinc-900/80 text-center flex items-center justify-between px-4 text-[10px] text-zinc-600 font-mono">
+        <span>TMSA Menorca Interurbano</span>
+        <div class="flex items-center space-x-1 opacity-70 hover:opacity-100 transition-opacity">
+            <svg width="10" height="10" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <polygon points="50,5 90,27.5 90,72.5 50,95 10,72.5 10,27.5" stroke="#52525b" stroke-width="10" fill="#121212" />
+                <text x="50" y="65" font-family="Arial, sans-serif" font-weight="900" font-size="40" fill="#52525b" text-anchor="middle">MB</text>
+            </svg>
+            <span class="tracking-widest font-bold">medbasha</span>
+        </div>
+    </footer>
 
     <script>
         const firebaseConfig = {
@@ -255,33 +308,71 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        const REDES_AUTOBUSES = {
-            "me1_principal": {
-                nombre: "🚌 Carretera General (L01A / L01B)",
-                lineas: ["L01A", "L01B", "L01"],
+        // BASE DE DATOS DE LÍNEAS OFICIALES Y TIEMPOS REALES DE TMSA
+        const LINEAS_TMSA = {
+            // CARRETERA GENERAL ME-1
+            "L01A": {
+                nombre: "🚌 L01A: Maó ➔ Ciutadella",
+                lineaCodigo: "L01A",
+                esPlayas: false,
                 paradas: ["Maó", "Argen", "Alaior P.", "Alaior C.", "Mer", "Ferr", "Ciu"],
-                tiempos: {
-                    "Maó-Argen": 12, "Argen-Alaior P.": 5, "Alaior P.-Alaior C.": 3, "Alaior C.-Mer": 10, "Mer-Ferr": 10, "Ferr-Ciu": 20,
-                    "Ciu-Ferr": 20, "Ferr-Mer": 10, "Mer-Alaior C.": 10, "Alaior C.-Alaior P.": 3, "Alaior P.-Argen": 5, "Argen-Maó": 12
+                tiempos: { "Maó-Argen": 12, "Argen-Alaior P.": 5, "Alaior P.-Alaior C.": 3, "Alaior C.-Mer": 10, "Mer-Ferr": 10, "Ferr-Ciu": 20 }
+            },
+            "L01B": {
+                nombre: "🚌 L01B: Ciutadella ➔ Maó",
+                lineaCodigo: "L01B",
+                esPlayas: false,
+                paradas: ["Ciu", "Ferr", "Mer", "Alaior C.", "Alaior P.", "Argen", "Maó"],
+                tiempos: { "Ciu-Ferr": 20, "Ferr-Mer": 10, "Mer-Alaior C.": 10, "Alaior C.-Alaior P.": 3, "Alaior P.-Argen": 5, "Argen-Maó": 12 }
+            },
+
+            // CALA GALDANA
+            "L51": {
+                nombre: "🏖️ L51: Maó ➔ Cala Galdana",
+                lineaCodigo: "L51",
+                esPlayas: true,
+                paradas: ["Maó", "Argen", "Alaior P.", "Alaior C.", "Mer", "Ferr", "Cala Galdana"],
+                tiempos: { 
+                    "Maó-Argen": 12, "Argen-Alaior P.": 5, "Alaior P.-Alaior C.": 3, 
+                    "Alaior C.-Mer": 10, "Mer-Ferr": 10, "Ferr-Cala Galdana": 12 
                 }
             },
-            "centro_costas": {
-                nombre: "🏖️ Centro y Playas (L51, L52, L53, L71, L72)",
-                lineas: ["L51", "L52", "L53", "L71", "L72"],
-                paradas: ["Maó", "Ciutadella", "Ferreries", "Es Migjorn", "Cala Galdana", "Sant Tomàs"],
-                tiempos: {
-                    "Maó-Ferreries": 25, "Ferreries-Cala Galdana": 12, "Cala Galdana-Ferreries": 12,
-                    "Ciutadella-Ferreries": 20, "Ferreries-Es Migjorn": 10, "Es Migjorn-Sant Tomàs": 8,
-                    "Sant Tomàs-Es Migjorn": 8, "Es Migjorn-Ferreries": 10
+            "L52": {
+                nombre: "🏖️ L52: Ciutadella ➔ Cala Galdana",
+                lineaCodigo: "L52",
+                esPlayas: true,
+                paradas: ["Ciutadella", "Ferreries", "Cala Galdana"],
+                tiempos: { "Ciutadella-Ferreries": 20, "Ferreries-Cala Galdana": 12 }
+            },
+            "L53": {
+                nombre: "🏖️ L53: Ferreries ➔ Cala Galdana (Lanzadera)",
+                lineaCodigo: "L53",
+                esPlayas: true,
+                paradas: ["Ferreries", "Cala Galdana"],
+                tiempos: { "Ferreries-Cala Galdana": 12 }
+            },
+
+            // SANT TOMÀS
+            "L71": {
+                nombre: "🏖️ L71: Maó ➔ Sant Tomàs",
+                lineaCodigo: "L71",
+                esPlayas: true,
+                paradas: ["Maó", "Argen", "Alaior P.", "Alaior C.", "Es Migjorn", "Sant Tomàs"],
+                tiempos: { 
+                    "Maó-Argen": 12, "Argen-Alaior P.": 5, "Alaior P.-Alaior C.": 3, 
+                    "Alaior C.-Es Migjorn": 12, "Es Migjorn-Sant Tomàs": 8 
                 }
             },
-            "mao_levante": {
-                nombre: "🌊 Maó y Levante (L02, L31)",
-                lineas: ["L02", "L31"],
-                paradas: ["Maó", "Es Castell", "Cala en Porter"],
-                tiempos: {
-                    "Maó-Es Castell": 10, "Es Castell-Maó": 10,
-                    "Maó-Cala en Porter": 20, "Cala en Porter-Maó": 20
+            "L72": {
+                nombre: "🏖️ L72: Ciutadella ➔ Sant Tomàs",
+                lineaCodigo: "L72",
+                esPlayas: true,
+                paradas: ["Ciutadella", "Ferreries", "Es Mercadal", "Es Migjorn", "Sant Tomàs"],
+                tiempos: { 
+                    "Ciutadella-Ferreries": 20, 
+                    "Ferreries-Es Mercadal": 10, 
+                    "Es Mercadal-Es Migjorn": 12, 
+                    "Es Migjorn-Sant Tomàs": 8 
                 }
             }
         };
@@ -291,7 +382,7 @@
             async init() {
                 if(this.db) return this.db;
                 return new Promise((resolve, reject) => {
-                    const req = indexedDB.open("BusTalkPasajeroDB", 16);
+                    const req = indexedDB.open("BusTalkPasajeroDB", 18);
                     req.onupgradeneeded = e => {
                         let db = e.target.result;
                         if (!db.objectStoreNames.contains("settings")) db.createObjectStore("settings");
@@ -320,19 +411,20 @@
 
         function busTalkPasajeroApp() {
             return {
-                REDES_AUTOBUSES: REDES_AUTOBUSES,
-                redSeleccionadaKey: 'me1_principal',
+                LINEAS_TMSA: LINEAS_TMSA,
+                lineaSeleccionadaKey: 'L01A',
                 paradaSeleccionada: 'Alaior C.',
                 busesActivos: [],
                 ahora: Date.now(),
+                mostrarModalTutorial: false,
                 unsubscribeFirestore: null,
 
-                get listaParadasRedActual() {
-                    return this.REDES_AUTOBUSES[this.redSeleccionadaKey].paradas;
+                get listaParadasLineaActual() {
+                    return this.LINEAS_TMSA[this.lineaSeleccionadaKey].paradas;
                 },
 
-                get tiemposTramosRedActual() {
-                    return this.REDES_AUTOBUSES[this.redSeleccionadaKey].tiempos;
+                get tiemposTramosLineaActual() {
+                    return this.LINEAS_TMSA[this.lineaSeleccionadaKey].tiempos;
                 },
 
                 async init() {
@@ -340,27 +432,33 @@
                         await navigator.storage.persist();
                     }
 
+                    // COMPROBACIÓN TUTORIAL / BIENVENIDA
+                    const tutorialVisto = await idb.get('tutorial_v240_visto') || localStorage.getItem('tutorial_v240_visto');
+                    if (!tutorialVisto) {
+                        this.mostrarModalTutorial = true;
+                    }
+
                     const params = new URLSearchParams(window.location.search);
-                    const qRed = params.get('red');
+                    const qLinea = params.get('linea');
                     const qParada = params.get('parada');
 
-                    if (qRed && this.REDES_AUTOBUSES[qRed]) {
-                        this.redSeleccionadaKey = qRed;
+                    if (qLinea && this.LINEAS_TMSA[qLinea]) {
+                        this.lineaSeleccionadaKey = qLinea;
                     } else {
-                        const guardadaRed = await idb.get('mi_red_preferida');
-                        if (guardadaRed && this.REDES_AUTOBUSES[guardadaRed]) {
-                            this.redSeleccionadaKey = guardadaRed;
+                        const guardadaLinea = await idb.get('mi_linea_preferida');
+                        if (guardadaLinea && this.LINEAS_TMSA[guardadaLinea]) {
+                            this.lineaSeleccionadaKey = guardadaLinea;
                         }
                     }
 
-                    if (qParada && this.listaParadasRedActual.includes(qParada)) {
+                    if (qParada && this.listaParadasLineaActual.includes(qParada)) {
                         this.paradaSeleccionada = qParada;
                     } else {
-                        const guardadaParada = await idb.get('mi_parada_preferida_' + this.redSeleccionadaKey);
-                        if (guardadaParada && this.listaParadasRedActual.includes(guardadaParada)) {
+                        const guardadaParada = await idb.get('mi_parada_preferida_' + this.lineaSeleccionadaKey);
+                        if (guardadaParada && this.listaParadasLineaActual.includes(guardadaParada)) {
                             this.paradaSeleccionada = guardadaParada;
                         } else {
-                            this.paradaSeleccionada = this.listaParadasRedActual[0];
+                            this.paradaSeleccionada = this.listaParadasLineaActual[0];
                         }
                     }
 
@@ -379,18 +477,24 @@
                     });
                 },
 
-                async cambiarRed() {
-                    await idb.set('mi_red_preferida', this.redSeleccionadaKey);
-                    const guardadaParada = await idb.get('mi_parada_preferida_' + this.redSeleccionadaKey);
-                    if (guardadaParada && this.listaParadasRedActual.includes(guardadaParada)) {
+                async cerrarTutorial() {
+                    this.mostrarModalTutorial = false;
+                    await idb.set('tutorial_v240_visto', true);
+                    localStorage.setItem('tutorial_v240_visto', 'true');
+                },
+
+                async cambiarLinea() {
+                    await idb.set('mi_linea_preferida', this.lineaSeleccionadaKey);
+                    const guardadaParada = await idb.get('mi_parada_preferida_' + this.lineaSeleccionadaKey);
+                    if (guardadaParada && this.listaParadasLineaActual.includes(guardadaParada)) {
                         this.paradaSeleccionada = guardadaParada;
                     } else {
-                        this.paradaSeleccionada = this.listaParadasRedActual[0];
+                        this.paradaSeleccionada = this.listaParadasLineaActual[0];
                     }
                 },
 
                 async guardarParada() {
-                    await idb.set('mi_parada_preferida_' + this.redSeleccionadaKey, this.paradaSeleccionada);
+                    await idb.set('mi_parada_preferida_' + this.lineaSeleccionadaKey, this.paradaSeleccionada);
                 },
 
                 conectarEscuchaFirebase() {
@@ -409,46 +513,38 @@
                     });
                 },
 
-                esIdDeRedActual(bus) {
-                    let redObj = this.REDES_AUTOBUSES[this.redSeleccionadaKey];
+                esIdDeLineaActual(bus) {
+                    let lineaObj = this.LINEAS_TMSA[this.lineaSeleccionadaKey];
                     let busLinea = (bus.linea || '').toUpperCase();
                     let busId = (bus.id || '').toUpperCase();
                     
-                    return redObj.lineas.some(l => busLinea.includes(l) || busId.includes(l));
+                    return busLinea.includes(lineaObj.lineaCodigo) || busId.includes(lineaObj.lineaCodigo);
                 },
 
-                esSentidoIda(bus) {
-                    // Ciu->Mao o Salidas a la Costa/Playa
-                    if (this.redSeleccionadaKey === 'me1_principal') {
-                        let idVal = bus.id ? bus.id.toUpperCase() : '';
-                        let lineaVal = bus.linea ? bus.linea.toUpperCase() : '';
-                        if (idVal.includes('L01B') || lineaVal.includes('L01B')) return true;
-                        return bus.origen === 'Ciu' || bus.sentido === 'ciutadella_mao';
-                    }
-
-                    // Líneas de Playa/Costa: Ir a la playa = Azul (Ida)
-                    return bus.sentido === 'ida' || bus.destino === 'Cala Galdana' || bus.destino === 'Sant Tomàs' || bus.destino === 'Cala en Porter' || bus.destino === 'Es Castell';
+                esSentidoInvertido(bus) {
+                    return bus.sentido === 'vuelta' || bus.sentido === 'ciutadella_mao';
                 },
 
                 obtenerClaseColorInsignia(bus) {
-                    if (this.redSeleccionadaKey === 'me1_principal') {
-                        return this.esSentidoIda(bus) ? 'bg-yellow-400 text-black' : 'bg-red-600 text-white';
+                    let lineaObj = this.LINEAS_TMSA[this.lineaSeleccionadaKey];
+                    if (!lineaObj.esPlayas) {
+                        return this.lineaSeleccionadaKey === 'L01B' ? 'bg-yellow-400 text-black' : 'bg-red-600 text-white';
                     }
                     // PLAYAS: AZUL = Hacia la Playa (Mar), MARRÓN = Vuelta al Pueblo (Tierra)
-                    return this.esSentidoIda(bus) ? 'bg-sky-500 text-black' : 'bg-amber-900 text-amber-100 border border-amber-700';
+                    return this.esSentidoInvertido(bus) ? 'bg-amber-900 text-amber-100 border border-amber-700' : 'bg-sky-500 text-black';
                 },
 
                 obtenerClaseColorTexto(bus) {
-                    if (this.redSeleccionadaKey === 'me1_principal') {
-                        return this.esSentidoIda(bus) ? 'text-yellow-400' : 'text-red-500';
+                    let lineaObj = this.LINEAS_TMSA[this.lineaSeleccionadaKey];
+                    if (!lineaObj.esPlayas) {
+                        return this.lineaSeleccionadaKey === 'L01B' ? 'text-yellow-400' : 'text-red-500';
                     }
-                    // PLAYAS: AZUL vs MARRÓN
-                    return this.esSentidoIda(bus) ? 'text-sky-400' : 'text-amber-500';
+                    return this.esSentidoInvertido(bus) ? 'text-amber-500' : 'text-sky-400';
                 },
 
                 obtenerArrayRutaBus(bus) {
-                    let paradas = this.listaParadasRedActual;
-                    return this.esSentidoIda(bus) ? [...paradas].reverse() : paradas;
+                    let paradas = this.listaParadasLineaActual;
+                    return this.esSentidoInvertido(bus) ? [...paradas].reverse() : paradas;
                 },
 
                 obtenerSentidoTexto(bus) {
@@ -471,7 +567,7 @@
                 },
 
                 esBusEnCamino(bus) {
-                    if (!this.esIdDeRedActual(bus)) return false;
+                    if (!this.esIdDeLineaActual(bus)) return false;
                     let ruta = this.obtenerArrayRutaBus(bus);
                     let idxBus = ruta.indexOf(bus.ubicacion);
                     let idxUsuario = ruta.indexOf(this.paradaSeleccionada);
@@ -484,7 +580,7 @@
                 },
 
                 esBusRebasadoRecientemente(bus) {
-                    if (!this.esIdDeRedActual(bus)) return false;
+                    if (!this.esIdDeLineaActual(bus)) return false;
                     let ruta = this.obtenerArrayRutaBus(bus);
                     let idxBus = ruta.indexOf(bus.ubicacion);
                     let idxUsuario = ruta.indexOf(this.paradaSeleccionada);
@@ -507,7 +603,7 @@
 
                 get busesFiltradosVisibles() {
                     return this.busesActivos.filter(bus => {
-                        return this.esIdDeRedActual(bus) && (this.esBusEnCamino(bus) || this.esBusRebasadoRecientemente(bus));
+                        return this.esIdDeLineaActual(bus) && (this.esBusEnCamino(bus) || this.esBusRebasadoRecientemente(bus));
                     }).sort((a, b) => {
                         let rutaA = this.obtenerArrayRutaBus(a);
                         let rutaB = this.obtenerArrayRutaBus(b);
@@ -529,16 +625,49 @@
                     return this.calcularTiempoEstimado(bus);
                 },
 
+                obtenerSiguienteParadaNombre(bus) {
+                    let ruta = this.obtenerArrayRutaBus(bus);
+                    let idxBus = ruta.indexOf(bus.ubicacion);
+                    if (idxBus !== -1 && idxBus < ruta.length - 1) {
+                        return ruta[idxBus + 1];
+                    }
+                    return "Destino Final";
+                },
+
+                obtenerTextoTramoEnVivo(bus) {
+                    if (bus.enParada) return "Detenido";
+                    let ruta = this.obtenerArrayRutaBus(bus);
+                    let idxBus = ruta.indexOf(bus.ubicacion);
+                    if (idxBus === -1 || idxBus >= ruta.length - 1) return "En llegada";
+
+                    let tramoKey = `${ruta[idxBus]}-${ruta[idxBus+1]}`;
+                    let duracionTramoMin = this.tiemposTramosLineaActual[tramoKey] || 10;
+
+                    let marcaInicio = bus.timestampSalida || bus.timestamp || this.ahora;
+                    let segundosConsumidos = Math.floor((this.ahora - marcaInicio) / 1000);
+                    let segundosTotalesTramo = duracionTramoMin * 60;
+                    let segundosRestantes = segundosTotalesTramo - segundosConsumidos;
+
+                    if (segundosRestantes < 0) {
+                        let minutosRetraso = Math.abs(Math.floor(segundosRestantes / 60));
+                        return `Retraso: -${minutosRetraso} min`;
+                    }
+
+                    let minQuedan = Math.ceil(segundosRestantes / 60);
+                    return `Llegada en ${minQuedan} min`;
+                },
+
                 obtenerMinutosRetraso(bus) {
-                    if (!bus.timestampSalida || bus.enParada) return 0;
+                    if (bus.enParada) return 0;
                     let ruta = this.obtenerArrayRutaBus(bus);
                     let idxBus = ruta.indexOf(bus.ubicacion);
                     if (idxBus === -1 || idxBus >= ruta.length - 1) return 0;
 
                     let tramoActualKey = `${ruta[idxBus]}-${ruta[idxBus+1]}`;
-                    let duracionTramoActualMin = this.tiemposTramosRedActual[tramoActualKey] || 10;
+                    let duracionTramoActualMin = this.tiemposTramosLineaActual[tramoActualKey] || 10;
                     
-                    let segundosConsumidos = Math.floor((this.ahora - bus.timestampSalida) / 1000);
+                    let marcaInicio = bus.timestampSalida || bus.timestamp || this.ahora;
+                    let segundosConsumidos = Math.floor((this.ahora - marcaInicio) / 1000);
                     let segundosTotalesTramo = duracionTramoActualMin * 60;
                     let segundosExcedidos = segundosConsumidos - segundosTotalesTramo;
 
@@ -565,13 +694,15 @@
                     let minutosRestantesTramos = 0;
                     for (let i = idxBus; i < idxUsuario; i++) {
                         let tramoKey = `${ruta[i]}-${ruta[i+1]}`;
-                        minutosRestantesTramos += (this.tiemposTramosRedActual[tramoKey] || 10);
+                        minutosRestantesTramos += (this.tiemposTramosLineaActual[tramoKey] || 10);
                     }
 
-                    if (!bus.enParada && bus.timestampSalida) {
+                    if (!bus.enParada) {
                         let tramoActualKey = `${ruta[idxBus]}-${ruta[idxBus+1]}`;
-                        let duracionTramoActualMin = this.tiemposTramosRedActual[tramoActualKey] || 10;
-                        let segundosConsumidos = Math.floor((this.ahora - bus.timestampSalida) / 1000);
+                        let duracionTramoActualMin = this.tiemposTramosLineaActual[tramoActualKey] || 10;
+                        
+                        let marcaInicio = bus.timestampSalida || bus.timestamp || this.ahora;
+                        let segundosConsumidos = Math.floor((this.ahora - marcaInicio) / 1000);
                         let segundosTotalesTramo = duracionTramoActualMin * 60;
                         
                         let segundosRestantesTramo = segundosTotalesTramo - segundosConsumidos;
