@@ -1,7 +1,7 @@
 {
   "name": "BusTalk Info Pasajeros (TMSA)",
   "short_name": "BusTalk TMSA",
-  "description": "Información de llegada de autobuses en tiempo real para Menorca - TMSA",
+  "description": "Información de llegada de autobuses en tiempo real para Menorca - TMSA v2.4.0",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
